@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
+import { AuthProvider } from '../contexts/AuthContext';
+import { DataProvider } from '../contexts/DataContext';
 
 const theme = {
   colors: {
@@ -14,14 +16,18 @@ const theme = {
 export default function RootLayout() {
   return (
     <PaperProvider theme={theme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="dashboard" options={{ title: 'SolSync Africa' }} />
-        <Stack.Screen name="system-monitoring" options={{ title: 'System Monitoring' }} />
-        <Stack.Screen name="payment" options={{ title: 'Payment & Financing' }} />
-        <Stack.Screen name="service-request" options={{ title: 'Service Request' }} />
-        <Stack.Screen name="education" options={{ title: 'Opportunity Hub' }} />
-      </Stack>
+      <AuthProvider>
+        <DataProvider>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="dashboard" options={{ title: 'SolSync Africa' }} />
+            <Stack.Screen name="system-monitoring" options={{ title: 'System Monitoring' }} />
+            <Stack.Screen name="payment" options={{ title: 'Payment & Financing' }} />
+            <Stack.Screen name="service-request" options={{ title: 'Service Request' }} />
+            <Stack.Screen name="education" options={{ title: 'Opportunity Hub' }} />
+          </Stack>
+        </DataProvider>
+      </AuthProvider>
     </PaperProvider>
   );
 }
