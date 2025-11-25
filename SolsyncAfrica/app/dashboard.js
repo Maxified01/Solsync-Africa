@@ -4,18 +4,25 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet
+  StyleSheet,
+  RefreshControl
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 
 export default function DashboardScreen() {
-  const systemData = {
-    batteryLevel: 85,
-    powerOutput: 245,
-    status: 'Optimal',
-  };
+  const { user, logout } = useAuth();
+  const { systemData, payments, refreshData } = useData();
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    refreshData();
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   const quickActions = [
     {
@@ -45,13 +52,18 @@ export default function DashboardScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* Welcome Section */}
       <Card style={styles.welcomeCard}>
         <Card.Content>
-          <Text style={styles.welcomeText}>Welcome to SolSync Africa!</Text>
+          <Text style={styles.welcomeText}>Welcome, {user?.name}!</Text>
           <Text style={styles.welcomeSubtext}>
-            Your solar energy management platform
+            System ID: {user?.systemId} | Location: {user?.location}
           </Text>
         </Card.Content>
       </Card>
@@ -63,18 +75,46 @@ export default function DashboardScreen() {
           <View style={styles.statusGrid}>
             <View style={styles.statusItem}>
               <Icon name="battery" size={30} color="#2E8B57" />
-              <Text style={styles.statusValue}>{systemData.batteryLevel}%</Text>
+              <Text style={styles.statusValue}>{Math.round(systemData.batteryLevel)}%</Text>
               <Text style={styles.statusLabel}>Battery</Text>
             </View>
             <View style={styles.statusItem}>
               <Icon name="flash" size={30} color="#FFA500" />
-              <Text style={styles.statusValue}>{systemData.powerOutput}W</Text>
+              <Text style={styles.statusValue}>{Math.round(systemData.powerOutput)}W</Text>
               <Text style={styles.statusLabel}>Power Output</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <Icon name="chart-line" size={30} color="#4169E1" />
+              <Text style={styles.statusValue}>{systemData.dailyProduction}kWh</Text>
+              <Text style={styles.statusLabel}>Today's Production</Text>
             </View>
             <View style={styles.statusItem}>
               <Icon name="check-circle" size={30} color="#2E8B57" />
               <Text style={styles.statusValue}>{systemData.status}</Text>
               <Text style={styles.statusLabel}>Status</Text>
+            </View>
+          </View>
+        </Card.Content>
+      </Card>
+
+      {/* Payment Status */}
+      <Card style={styles.paymentCard}>
+        <Card.Content>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Payment Status</Text>
+            <TouchableOpacity onPress={() => router.push('/payment')}>
+              <Text style={styles.viewAllText}>Manage</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.paymentInfo}>
+            <View style={styles.paymentItem}>
+              <Text style={styles.paymentLabel}>Current Balance</Text>
+              <Text style={styles.paymentAmount}>{payments.balance} RWF</Text>
+            </View>
+            <View style={styles.paymentItem}>
+              <Text style={styles.paymentLabel}>Next Payment</Text>
+              <Text style={styles.paymentDue}>{payments.dueDate}</Text>
             </View>
           </View>
         </Card.Content>
@@ -103,11 +143,11 @@ export default function DashboardScreen() {
           <Text style={styles.cardTitle}>Recent Activity</Text>
           <View style={styles.activityItem}>
             <Icon name="check" size={20} color="#2E8B57" />
-            <Text style={styles.activityText}>Payment received - 15 Oct 2024</Text>
+            <Text style={styles.activityText}>System operating normally</Text>
           </View>
           <View style={styles.activityItem}>
-            <Icon name="tools" size={20} color="#4169E1" />
-            <Text style={styles.activityText}>System maintenance completed</Text>
+            <Icon name="cash" size={20} color="#FFA500" />
+            <Text style={styles.activityText}>Payment of 500 RWF received</Text>
           </View>
         </Card.Content>
       </Card>
@@ -115,7 +155,7 @@ export default function DashboardScreen() {
       {/* Logout Button */}
       <Button
         mode="outlined"
-        onPress={() => router.push('/')}
+        onPress={logout}
         style={styles.logoutButton}
       >
         Logout
@@ -141,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   welcomeSubtext: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'white',
     opacity: 0.9,
   },
@@ -149,19 +189,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 4,
   },
+  paymentCard: {
+    marginBottom: 20,
+    elevation: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
     color: '#333',
+  },
+  viewAllText: {
+    color: '#2E8B57',
+    fontWeight: '500',
   },
   statusGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   statusItem: {
     alignItems: 'center',
-    flex: 1,
+    width: '48%',
+    marginBottom: 15,
   },
   statusValue: {
     fontSize: 16,
@@ -171,6 +226,29 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 12,
     color: '#666',
+  },
+  paymentInfo: {
+    marginBottom: 15,
+  },
+  paymentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  paymentLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  paymentAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E8B57',
+  },
+  paymentDue: {
+    fontSize: 16,
+    color: '#FFA500',
+    fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 18,
