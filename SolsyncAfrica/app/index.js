@@ -10,7 +10,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { validatePhoneNumber, validateVerificationCode, formatPhoneNumber } from '../utils/validators';
 
 export default function LoginScreen() {
