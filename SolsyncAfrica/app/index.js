@@ -11,8 +11,34 @@ import {
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
-// FIX: Import each function individually
-import { validatePhoneNumber, validateVerificationCode, formatPhoneNumber } from '../utils/validators';
+
+// Improved validation functions
+const validatePhoneNumber = (phone) => {
+  // More flexible validation for Rwandan numbers
+  const phoneRegex = /^(\+?25)?0?7[0-9]{8}$/; // Allows 07, +2507, 2507, etc.
+  return phoneRegex.test(phone.replace(/\s/g, ''));
+};
+
+const validateVerificationCode = (code) => {
+  return code.length === 6 && /^\d+$/.test(code);
+};
+
+const formatPhoneNumber = (phone) => {
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Handle different formats
+  if (cleaned.startsWith('250')) {
+    return `+${cleaned}`;
+  } else if (cleaned.startsWith('0')) {
+    return `+25${cleaned.substring(1)}`;
+  } else if (cleaned.startsWith('7')) {
+    return `+25${cleaned}`;
+  } else if (cleaned.length === 9 && cleaned.startsWith('25')) {
+    return `+${cleaned}`;
+  }
+  
+  return `+${cleaned}`;
+};
 
 export default function LoginScreen() {
   const { login, loading } = useAuth();
@@ -21,16 +47,21 @@ export default function LoginScreen() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSendCode = () => {
-    // TEST: Add console log to debug
-    console.log('validatePhoneNumber function:', validatePhoneNumber);
-    console.log('Phone number:', phoneNumber);
+    console.log('Phone number entered:', phoneNumber);
     
     if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert('Error', 'Please enter a valid Rwandan phone number (e.g., 0781234567)');
+      Alert.alert(
+        'Invalid Phone Number', 
+        'Please enter a valid Rwandan mobile number.\n\nExamples:\n• 0781234567\n• +250781234567\n• 250781234567'
+      );
       return;
     }
+    
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    console.log('Formatted phone:', formattedPhone);
+    
     setIsVerifying(true);
-    Alert.alert('Success', 'Verification code sent to your phone');
+    Alert.alert('Success', `Verification code sent to ${formattedPhone}`);
   };
 
   const handleVerify = async () => {
@@ -42,7 +73,6 @@ export default function LoginScreen() {
     const formattedPhone = formatPhoneNumber(phoneNumber);
     await login(formattedPhone, verificationCode);
   };
-}
 
   if (loading) {
     return (
@@ -75,7 +105,11 @@ export default function LoginScreen() {
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
+                autoComplete="tel"
               />
+              <Text style={styles.helpText}>
+                Enter your Rwandan mobile number
+              </Text>
               <Button
                 mode="contained"
                 onPress={handleSendCode}
@@ -130,6 +164,7 @@ export default function LoginScreen() {
       </View>
     </ScrollView>
   );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -168,9 +203,16 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 10,
     fontSize: 16,
     backgroundColor: '#fff',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 15,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   button: {
     marginVertical: 10,
