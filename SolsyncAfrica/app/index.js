@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
+// FIX: Import each function individually
 import { validatePhoneNumber, validateVerificationCode, formatPhoneNumber } from '../utils/validators';
 
 export default function LoginScreen() {
@@ -20,6 +21,10 @@ export default function LoginScreen() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSendCode = () => {
+    // TEST: Add console log to debug
+    console.log('validatePhoneNumber function:', validatePhoneNumber);
+    console.log('Phone number:', phoneNumber);
+    
     if (!validatePhoneNumber(phoneNumber)) {
       Alert.alert('Error', 'Please enter a valid Rwandan phone number (e.g., 0781234567)');
       return;
@@ -37,6 +42,7 @@ export default function LoginScreen() {
     const formattedPhone = formatPhoneNumber(phoneNumber);
     await login(formattedPhone, verificationCode);
   };
+}
 
   if (loading) {
     return (
@@ -124,7 +130,6 @@ export default function LoginScreen() {
       </View>
     </ScrollView>
   );
-}
 
 const styles = StyleSheet.create({
   container: {
