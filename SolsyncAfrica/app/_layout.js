@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
-import { AuthProvider } from '../contexts/AuthContext';
-import { DataProvider } from '../contexts/DataContext';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { DataProvider } from '../../contexts/DataContext';
 
 const theme = {
   colors: {
