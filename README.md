@@ -1,4 +1,4 @@
-# SolSync 
+# SolSync-Africa
 
 ## Mission
 SolSync Africa aims to help eradicate poverty in Africa, both mentally and financially, by utilizing renewable energy solutions to improve living standards and economic potential through the solar energy sector.
@@ -62,3 +62,5 @@ npm start
 
 7. Run on web 
 Press w in terminal to open browser
+
+## Demo video 
