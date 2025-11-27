@@ -48,7 +48,19 @@ export default function DashboardScreen() {
       icon: 'lightbulb',
       screen: '/education',
       color: '#8A2BE2'
-    }
+    },
+    {
+      title: 'My Profile',
+      icon: 'account',
+      screen: '/profile',
+      color: '#8A2BE2'
+    },
+    {
+      title: 'Register System',
+      icon: 'plus-box',
+      screen: '/register-system',
+      color: '#FF6347'
+    },
   ];
 
   return (
@@ -61,7 +73,7 @@ export default function DashboardScreen() {
       {/* Welcome Section */}
       <Card style={styles.welcomeCard}>
         <Card.Content>
-          <Text style={styles.welcomeText}>Welcome, {user?.name}!</Text>
+          <Text style={styles.welcomeText}>Welcome, {user?.name}</Text>
           <Text style={styles.welcomeSubtext}>
             System ID: {user?.systemId} | Location: {user?.location}
           </Text>
@@ -97,7 +109,7 @@ export default function DashboardScreen() {
         </Card.Content>
       </Card>
 
-      {/* Payment Status */}
+      {/* Your Payment Status */}
       <Card style={styles.paymentCard}>
         <Card.Content>
           <View style={styles.cardHeader}>
@@ -137,17 +149,17 @@ export default function DashboardScreen() {
         ))}
       </View>
 
-      {/* Recent Activity */}
+      {/*Activity Section*/}
       <Card style={styles.activityCard}>
         <Card.Content>
-          <Text style={styles.cardTitle}>Recent Activity</Text>
+          <Text style={styles.cardTitle}>Most Recent Activity</Text>
           <View style={styles.activityItem}>
             <Icon name="check" size={20} color="#2E8B57" />
             <Text style={styles.activityText}>System operating normally</Text>
           </View>
           <View style={styles.activityItem}>
             <Icon name="cash" size={20} color="#FFA500" />
-            <Text style={styles.activityText}>Payment of 500 RWF received</Text>
+            <Text style={styles.activityText}>Payment of 5000 RWF received</Text>
           </View>
         </Card.Content>
       </Card>

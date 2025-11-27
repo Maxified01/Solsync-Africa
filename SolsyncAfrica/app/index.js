@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
+import { router } from 'expo-router';
 
-// Improved validation functions
+// Define validation functions directly in the file
 const validatePhoneNumber = (phone) => {
-  // More flexible validation for Rwandan numbers
   const phoneRegex = /^(\+?25)?0?7[0-9]{8}$/; // Allows 07, +2507, 2507, etc.
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
@@ -162,6 +162,19 @@ export default function LoginScreen() {
         <Text style={styles.feature}>• Technician Services</Text>
         <Text style={styles.feature}>• Business Opportunity Hub</Text>
       </View>
+
+      {/* This was the FIRST registration link I added */}
+      <View style={styles.registerContainer}>
+        <Text style={styles.registerText}>
+          Don't have an account?{' '}
+          <Text 
+            style={styles.registerLink}
+            onPress={() => router.push('/register')}
+          >
+            Create Account
+          </Text>
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -264,5 +277,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: 'white',
     fontSize: 16,
+  },
+  // Original registration container styles
+  registerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  registerText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#FFA500',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });

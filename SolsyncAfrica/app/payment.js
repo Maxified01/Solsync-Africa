@@ -4,15 +4,24 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Alert
+  Alert,
+  TouchableOpacity
 } from 'react-native';
-import { Card, Button, List, RadioButton } from 'react-native-paper';
+import { Card, Button, List, RadioButton, Divider, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
+import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
+import { usePayment } from '../contexts/PaymentContext';
 
 export default function PaymentScreen() {
+  const { user } = useAuth();
+  const { payments, makePayment } = useData();
+  const { paymentMethods, paymentHistory, processPayment, getPaymentStats } = usePayment();
+  
+  const [selectedMethod, setSelectedMethod] = useState('mtn');
+  const [processing, setProcessing] = useState(false);
   const [paymentPlan, setPaymentPlan] = useState('weekly');
-  const [balance, setBalance] = useState(1500);
 
   const paymentPlans = [
     { id: 'daily', amount: 70, label: 'Daily - 70 RWF/day' },
@@ -20,42 +29,94 @@ export default function PaymentScreen() {
     { id: 'monthly', amount: 2000, label: 'Monthly - 2000 RWF/month' }
   ];
 
-  const paymentHistory = [
-    { id: 1, date: '2024-10-15', amount: 500, status: 'completed' },
-    { id: 2, date: '2024-10-08', amount: 500, status: 'completed' },
-    { id: 3, date: '2024-10-01', amount: 500, status: 'completed' }
-  ];
+  const handleMobileMoneyPayment = async (amount) => {
+    setProcessing(true);
+    
+    try {
+      const paymentData = {
+        amount,
+        method: selectedMethod,
+        phoneNumber: user?.phone,
+        plan: paymentPlan
+      };
 
-  const handlePayment = (amount) => {
-    Alert.alert(
-      'Confirm Payment',
-      `Make payment of ${amount} RWF?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Pay Now', 
-          onPress: () => {
-            setBalance(prev => prev - amount);
-            Alert.alert('Success', 'Payment completed successfully!');
-          }
-        }
-      ]
-    );
+      const result = await processPayment(paymentData);
+      
+      // Update local balance
+      makePayment(amount);
+      
+      Alert.alert(
+        'Payment Successful!', 
+        `Your payment of ${amount} RWF has been processed successfully.\nTransaction ID: ${result.transactionId}`,
+        [{ text: 'OK', onPress: () => router.push('/dashboard') }]
+      );
+    } catch (error) {
+      Alert.alert('Payment Failed', 'Please try again or use a different payment method.');
+    } finally {
+      setProcessing(false);
+    }
   };
+
+  const getDaysUntilDue = () => {
+    const dueDate = new Date(payments.dueDate);
+    const today = new Date();
+    const diffTime = dueDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysUntilDue = getDaysUntilDue();
+  const paymentStats = getPaymentStats();
 
   return (
     <ScrollView style={styles.container}>
-      {/* Current Balance */}
+      {/* Account Status */}
       <Card style={styles.card}>
         <Card.Content>
-          <Text style={styles.cardTitle}>Account Overview</Text>
-          <View style={styles.balanceContainer}>
-            <Icon name="cash" size={40} color="#2E8B57" />
-            <View style={styles.balanceInfo}>
-              <Text style={styles.balanceLabel}>Current Balance</Text>
-              <Text style={styles.balanceAmount}>{balance} RWF</Text>
-              <Text style={styles.dueDate}>Next due: 2024-10-22</Text>
+          <Text style={styles.cardTitle}>Account Status</Text>
+          <View style={styles.statusGrid}>
+            <View style={styles.statusItem}>
+              <Icon name="cash" size={24} color="#2E8B57" />
+              <Text style={styles.statusValue}>{payments.balance} RWF</Text>
+              <Text style={styles.statusLabel}>Current Balance</Text>
             </View>
+            <View style={styles.statusItem}>
+              <Icon name="calendar" size={24} color="#FFA500" />
+              <Text style={styles.statusValue}>{daysUntilDue}</Text>
+              <Text style={styles.statusLabel}>Days Until Due</Text>
+            </View>
+          </View>
+          
+          {daysUntilDue <= 3 && (
+            <View style={styles.warningBanner}>
+              <Icon name="alert" size={20} color="#FF6B6B" />
+              <Text style={styles.warningText}>
+                Payment due in {daysUntilDue} day{daysUntilDue !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* Quick Payment */}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Text style={styles.cardTitle}>Quick Payment</Text>
+          <Text style={styles.subtitle}>Select amount to pay now</Text>
+          
+          <View style={styles.quickAmounts}>
+            {[100, 500, 1000, 2000].map(amount => (
+              <Button
+                key={amount}
+                mode="outlined"
+                onPress={() => handleMobileMoneyPayment(amount)}
+                style={styles.amountButton}
+                disabled={processing}
+                loading={processing}
+              >
+                {amount} RWF
+              </Button>
+            ))}
           </View>
         </Card.Content>
       </Card>
@@ -63,7 +124,7 @@ export default function PaymentScreen() {
       {/* Payment Plans */}
       <Card style={styles.card}>
         <Card.Content>
-          <Text style={styles.cardTitle}>Select Payment Plan</Text>
+          <Text style={styles.cardTitle}>Subscription Plans</Text>
           <RadioButton.Group
             value={paymentPlan}
             onValueChange={value => setPaymentPlan(value)}
@@ -71,62 +132,120 @@ export default function PaymentScreen() {
             {paymentPlans.map(plan => (
               <View key={plan.id} style={styles.radioItem}>
                 <RadioButton value={plan.id} color="#2E8B57" />
-                <Text style={styles.radioLabel}>{plan.label}</Text>
+                <View style={styles.planInfo}>
+                  <Text style={styles.planLabel}>{plan.label}</Text>
+                  <Text style={styles.planDescription}>
+                    Auto-renewal • Cancel anytime
+                  </Text>
+                </View>
               </View>
             ))}
           </RadioButton.Group>
           
           <Button
             mode="contained"
-            style={styles.payButton}
+            style={styles.subscribeButton}
             onPress={() => {
               const amount = paymentPlans.find(p => p.id === paymentPlan)?.amount;
-              if (amount) handlePayment(amount);
+              if (amount) handleMobileMoneyPayment(amount);
             }}
+            disabled={processing}
+            loading={processing}
           >
-            Make Payment Now
+            {processing ? 'Processing...' : 'Subscribe to Plan'}
           </Button>
-        </Card.Content>
-      </Card>
-
-      {/* Payment History */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text style={styles.cardTitle}>Payment History</Text>
-          {paymentHistory.map(payment => (
-            <List.Item
-              key={payment.id}
-              title={`${payment.amount} RWF`}
-              description={`Paid on ${payment.date}`}
-              left={props => (
-                <List.Icon 
-                  {...props} 
-                  icon="check-circle" 
-                  color="#2E8B57" 
-                />
-              )}
-              right={props => (
-                <Text style={styles.statusText}>{payment.status}</Text>
-              )}
-            />
-          ))}
         </Card.Content>
       </Card>
 
       {/* Mobile Money Providers */}
       <Card style={styles.card}>
         <Card.Content>
-          <Text style={styles.cardTitle}>Supported Providers</Text>
-          <View style={styles.providersContainer}>
-            <View style={styles.providerItem}>
-              <Icon name="cellphone" size={30} color="#FF9900" />
-              <Text style={styles.providerText}>MTN Mobile Money</Text>
+          <Text style={styles.cardTitle}>Mobile Money Providers</Text>
+          <Text style={styles.subtitle}>Select your preferred payment method</Text>
+          
+          {paymentMethods.map(method => (
+            <TouchableOpacity
+              key={method.id}
+              style={[
+                styles.providerItem,
+                selectedMethod === method.id && styles.selectedProvider
+              ]}
+              onPress={() => setSelectedMethod(method.id)}
+              disabled={processing}
+            >
+              <View style={styles.providerInfo}>
+                <View style={[styles.providerIcon, { backgroundColor: method.color }]}>
+                  <Icon name={method.icon} size={24} color="white" />
+                </View>
+                <View style={styles.providerDetails}>
+                  <Text style={styles.providerName}>{method.name}</Text>
+                  <Text style={styles.providerCountries}>
+                    Available in: {method.countries.join(', ')}
+                  </Text>
+                </View>
+              </View>
+              <RadioButton
+                value={method.id}
+                status={selectedMethod === method.id ? 'checked' : 'unchecked'}
+                color="#2E8B57"
+              />
+            </TouchableOpacity>
+          ))}
+        </Card.Content>
+      </Card>
+
+      {/* Payment Statistics */}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Text style={styles.cardTitle}>Payment Statistics</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{paymentStats.totalPaid} RWF</Text>
+              <Text style={styles.statLabel}>Total Paid</Text>
             </View>
-            <View style={styles.providerItem}>
-              <Icon name="cellphone" size={30} color="#E61327" />
-              <Text style={styles.providerText}>Airtel Money</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{paymentStats.transactionCount}</Text>
+              <Text style={styles.statLabel}>Transactions</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{paymentStats.pendingCount}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
             </View>
           </View>
+        </Card.Content>
+      </Card>
+
+      {/* Recent Transactions */}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Text style={styles.cardTitle}>Recent Transactions</Text>
+          {paymentHistory.slice(0, 5).map(transaction => (
+            <List.Item
+              key={transaction.id}
+              title={`${transaction.amount} RWF`}
+              description={`Via ${paymentMethods.find(m => m.id === transaction.method)?.name} • ${transaction.date}`}
+              left={props => (
+                <List.Icon 
+                  {...props} 
+                  icon="check-circle" 
+                  color={transaction.status === 'completed' ? '#2E8B57' : '#FFA500'} 
+                />
+              )}
+              right={props => (
+                <View style={styles.transactionMeta}>
+                  <Text style={[
+                    styles.statusText,
+                    { color: transaction.status === 'completed' ? '#2E8B57' : '#FFA500' }
+                  ]}>
+                    {transaction.status}
+                  </Text>
+                  <Text style={styles.transactionId}>
+                    {transaction.transactionId}
+                  </Text>
+                </View>
+              )}
+            />
+          ))}
         </Card.Content>
       </Card>
     </ScrollView>
@@ -149,54 +268,138 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
-  balanceContainer: {
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+  },
+  statusGrid: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  statusItem: {
     alignItems: 'center',
+    flex: 1,
   },
-  balanceInfo: {
-    marginLeft: 15,
+  statusValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 5,
   },
-  balanceLabel: {
-    fontSize: 16,
+  statusLabel: {
+    fontSize: 12,
     color: '#666',
   },
-  balanceAmount: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2E8B57',
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE6E6',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
   },
-  dueDate: {
-    fontSize: 14,
-    color: '#FFA500',
-    marginTop: 5,
+  warningText: {
+    color: '#FF6B6B',
+    marginLeft: 8,
+    fontWeight: 'bold',
+  },
+  quickAmounts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  amountButton: {
+    width: '48%',
+    marginBottom: 10,
+    borderColor: '#2E8B57',
   },
   radioItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 15,
   },
-  radioLabel: {
-    fontSize: 16,
+  planInfo: {
+    flex: 1,
     marginLeft: 8,
   },
-  payButton: {
+  planLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  planDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  subscribeButton: {
     marginTop: 15,
     backgroundColor: '#2E8B57',
   },
-  statusText: {
-    color: '#2E8B57',
+  providerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  selectedProvider: {
+    borderColor: '#2E8B57',
+    backgroundColor: '#F0F9F0',
+  },
+  providerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  providerIcon: {
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  providerDetails: {
+    flex: 1,
+  },
+  providerName: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  providersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  providerItem: {
-    alignItems: 'center',
-  },
-  providerText: {
-    marginTop: 5,
+  providerCountries: {
     fontSize: 12,
-    textAlign: 'center',
+    color: '#666',
+    marginTop: 2,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E8B57',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  transactionMeta: {
+    alignItems: 'flex-end',
+  },
+  statusText: {
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  transactionId: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
   },
 });

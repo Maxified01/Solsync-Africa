@@ -16,21 +16,46 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "africa.solsync.mobile"
+      "bundleIdentifier": "africa.solsync.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to find nearby technicians and service providers.",
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes for system registration."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2E8B57"
       },
-      "package": "africa.solsync.mobile"
+      "package": "africa.solsync.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "build": {
+        "babel": {
+          "include": [
+            "react-native-vector-icons"
+          ]
+        }
+      }
     },
     "plugins": [
       "expo-router"
     ],
-    "scheme": "solsyncafrica"
+    "scheme": "solsyncafrica",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    }
   }
 }

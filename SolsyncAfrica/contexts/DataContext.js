@@ -29,40 +29,9 @@ export const DataProvider = ({ children }) => {
     ]
   });
 
-  // Simulate real-time data updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSystemData(prev => ({
-        ...prev,
-        batteryLevel: Math.max(10, prev.batteryLevel - 0.1),
-        powerOutput: 200 + Math.random() * 100,
-        temperature: 30 + Math.random() * 10
-      }));
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const makePayment = (amount) => {
-    setPayments(prev => ({
-      ...prev,
-      balance: prev.balance - amount,
-      history: [
-        {
-          id: Date.now(),
-          date: new Date().toISOString().split('T')[0],
-          amount,
-          status: 'completed'
-        },
-        ...prev.history
-      ]
-    }));
-  };
-
   const value = {
     systemData,
     payments,
-    makePayment,
     refreshData: () => {
       // Simulate data refresh
       setSystemData(prev => ({

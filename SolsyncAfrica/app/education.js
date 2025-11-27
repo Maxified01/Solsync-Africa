@@ -19,7 +19,7 @@ export default function EducationScreen() {
       title: 'Phone Charging Station',
       investment: 'Low',
       revenue: '2000-5000 RWF/day',
-      description: 'Set up a phone charging service for your community',
+      description: 'You can set up a phone charging service for your community',
       requirements: 'Solar system with 100W+ capacity, multiple charging cables'
     },
     {
@@ -27,7 +27,7 @@ export default function EducationScreen() {
       title: 'Refrigerated Drink Sales',
       investment: 'Medium',
       revenue: '5000-10000 RWF/day',
-      description: 'Sell cold drinks and beverages using solar-powered refrigeration',
+      description: 'Sell more cold drinks and beverages using solar-powered refrigeration',
       requirements: 'Solar refrigerator, initial stock investment'
     }
   ];
@@ -58,7 +58,7 @@ export default function EducationScreen() {
         <Card.Content>
           <Text style={styles.heroTitle}>Opportunity Hub</Text>
           <Text style={styles.heroSubtitle}>
-            Transform your solar power into profitable businesses
+            Optimize your solar power use for profitable businesses
           </Text>
         </Card.Content>
       </Card>
